@@ -84,7 +84,7 @@ Read the [EmpirioLabs AI documentation](https://docs.empiriolabs.ai) or email su
 
 == External services ==
 
-This plugin connects to the EmpirioLabs AI API at `https://api.empiriolabs.ai`, which runs the models. The service is required for every feature of the plugin, and the plugin sends nothing until an API key is set.
+This plugin connects to the EmpirioLabs AI API at `https://api.empiriolabs.ai` to list and run models. The service is required for every feature of the plugin, and the plugin sends nothing until an API key is set.
 
 What is sent, and when:
 
