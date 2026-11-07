@@ -121,8 +121,7 @@ class EmpirioLabsImageGenerationModel extends AbstractOpenAiCompatibleImageGener
         if ($aspectRatio !== null) {
             if ($supportedAspectRatios && !in_array($aspectRatio, $supportedAspectRatios, true)) {
                 throw new InvalidArgumentException(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                    'The aspect ratio "' . $aspectRatio . '" is not supported by this model.'
+                    'The aspect ratio "' . esc_html($aspectRatio) . '" is not supported by this model.'
                 );
             }
             return $aspectRatio;
@@ -238,16 +237,14 @@ class EmpirioLabsImageGenerationModel extends AbstractOpenAiCompatibleImageGener
                 } elseif (isset($jobData['error']) && is_string($jobData['error'])) {
                     $message = $jobData['error'];
                 }
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                throw ResponseException::fromInvalidData('EmpirioLabs AI', 'status', $message);
+                throw ResponseException::fromInvalidData('EmpirioLabs AI', 'status', esc_html($message));
             }
 
             if (time() + self::JOB_POLL_INTERVAL > $deadline) {
                 throw ResponseException::fromInvalidData(
                     'EmpirioLabs AI',
                     'status',
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                    'The image is still being generated. Job ID: ' . $jobId
+                    'The image is still being generated. Job ID: ' . esc_html($jobId)
                 );
             }
 

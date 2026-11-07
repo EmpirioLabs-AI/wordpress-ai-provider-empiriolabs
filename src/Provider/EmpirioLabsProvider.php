@@ -99,8 +99,7 @@ class EmpirioLabsProvider extends AbstractApiProvider
         }
 
         throw new RuntimeException(
-            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-            'Unsupported model capabilities: ' . implode(', ', $capabilities)
+            'Unsupported model capabilities: ' . esc_html(implode(', ', $capabilities))
         );
     }
 

@@ -13,6 +13,7 @@ use WordPress\AiClient\Files\Enums\FileTypeEnum;
 use WordPress\AiClient\Files\Enums\MediaOrientationEnum;
 use WordPress\AiClient\Messages\Enums\ModalityEnum;
 use WordPress\AiClient\Providers\Http\DTO\Request;
+use WordPress\AiClient\Providers\Http\DTO\RequestOptions;
 use WordPress\AiClient\Providers\Http\DTO\Response;
 use WordPress\AiClient\Providers\Http\Enums\HttpMethodEnum;
 use WordPress\AiClient\Providers\Http\Exception\ResponseException;
@@ -88,6 +89,15 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
     private const TEXT_CATEGORIES = ['text', 'research'];
 
     /**
+     * Timeout in seconds for the request that lists the models.
+     *
+     * @since 1.0.0
+     *
+     * @var float
+     */
+    private const LIST_MODELS_TIMEOUT = 15.0;
+
+    /**
      * Image output formats the API accepts, mapped to their MIME types.
      *
      * @since 1.0.0
@@ -110,11 +120,16 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
     {
         $headers['User-Agent'] = EmpirioLabsProvider::userAgent();
 
+        // The full catalog is a large response, so allow more than the 5-second WordPress default.
+        $options = new RequestOptions();
+        $options->setTimeout(self::LIST_MODELS_TIMEOUT);
+
         return new Request(
             $method,
             EmpirioLabsProvider::url($path),
             $headers,
-            $data
+            $data,
+            $options
         );
     }
 
@@ -128,12 +143,10 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
         /** @var ModelsResponseData $responseData */
         $responseData = $response->getData();
         if (!isset($responseData['data']) || !$responseData['data']) {
-            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw ResponseException::fromMissingData('EmpirioLabs AI', 'data');
         }
         if (!is_array($responseData['data'])) {
             throw ResponseException::fromInvalidData(
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
                 'EmpirioLabs AI',
                 'data',
                 'The value must be an array.'

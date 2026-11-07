@@ -85,22 +85,19 @@ class EmpirioLabsEmbeddingGenerationModel extends AbstractApiBasedModel implemen
         foreach ($inputs as $index => $part) {
             if (!$part instanceof MessagePart) {
                 throw new InvalidArgumentException(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                    sprintf('Embedding input at index %d must be a MessagePart.', $index)
+                    sprintf('Embedding input at index %d must be a MessagePart.', (int) $index)
                 );
             }
             if (!$part->getType()->isText()) {
                 throw new InvalidArgumentException(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                    sprintf('Embedding input at index %d must be a text part.', $index)
+                    sprintf('Embedding input at index %d must be a text part.', (int) $index)
                 );
             }
 
             $text = $part->getText();
             if ($text === null || trim($text) === '') {
                 throw new InvalidArgumentException(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                    sprintf('Embedding input at index %d must contain non-empty text.', $index)
+                    sprintf('Embedding input at index %d must contain non-empty text.', (int) $index)
                 );
             }
             $texts[] = $text;
@@ -123,9 +120,8 @@ class EmpirioLabsEmbeddingGenerationModel extends AbstractApiBasedModel implemen
             if (isset($params[$key])) {
                 throw new InvalidArgumentException(
                     sprintf(
-                        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
                         'The custom option "%s" conflicts with an existing parameter.',
-                        $key
+                        esc_html((string) $key)
                     )
                 );
             }
@@ -177,13 +173,11 @@ class EmpirioLabsEmbeddingGenerationModel extends AbstractApiBasedModel implemen
         $responseData = $response->getData();
 
         if (!isset($responseData['data']) || !$responseData['data']) {
-            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-            throw ResponseException::fromMissingData($this->providerMetadata()->getName(), 'data');
+            throw ResponseException::fromMissingData('EmpirioLabs AI', 'data');
         }
         if (!is_array($responseData['data']) || !array_is_list($responseData['data'])) {
             throw ResponseException::fromInvalidData(
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                $this->providerMetadata()->getName(),
+                'EmpirioLabs AI',
                 'data',
                 'The value must be an indexed array.'
             );
@@ -208,9 +202,8 @@ class EmpirioLabsEmbeddingGenerationModel extends AbstractApiBasedModel implemen
                 !is_array($embeddingData['embedding'])
             ) {
                 throw ResponseException::fromInvalidData(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                    $this->providerMetadata()->getName(),
-                    "data[{$index}].embedding",
+                    'EmpirioLabs AI',
+                    'data[' . (int) $index . '].embedding',
                     'The value must be an embedding vector.'
                 );
             }
