@@ -1,5 +1,5 @@
 === AI Provider for EmpirioLabs AI ===
-Contributors:      EMPIRIOLABS_WPORG_USER
+Contributors:      empiriolabs
 Tags:              ai, artificial-intelligence, connector, llm, image-generation
 Requires at least: 7.0
 Tested up to:      7.1
