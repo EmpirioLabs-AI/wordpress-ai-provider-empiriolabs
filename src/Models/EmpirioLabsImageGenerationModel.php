@@ -237,14 +237,13 @@ class EmpirioLabsImageGenerationModel extends AbstractOpenAiCompatibleImageGener
                 } elseif (isset($jobData['error']) && is_string($jobData['error'])) {
                     $message = $jobData['error'];
                 }
-                throw ResponseException::fromInvalidData('EmpirioLabs AI', 'status', esc_html($message));
+                throw new ResponseException(esc_html($message));
             }
 
             if (time() + self::JOB_POLL_INTERVAL > $deadline) {
-                throw ResponseException::fromInvalidData(
-                    'EmpirioLabs AI',
-                    'status',
-                    'The image is still being generated. Job ID: ' . esc_html($jobId)
+                throw new ResponseException(
+                    'The image is still being generated (job ' . esc_html($jobId) . '). '
+                    . 'Raise the request timeout to wait longer.'
                 );
             }
 

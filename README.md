@@ -39,7 +39,7 @@ Replace `MODEL_ID` with a model ID from [empiriolabs.ai/models](https://empiriol
 
 | AI Client capability | Supported options |
 | --- | --- |
-| Text generation | System instruction, chat history, maximum tokens, temperature, top P, top K, stop sequences, presence and frequency penalty, candidate count, log probabilities, function calling, JSON output and output schemas, image input. Each model lists only the options it accepts. |
+| Text generation | System instruction, chat history, maximum tokens, temperature, top P, top K, stop sequences, presence and frequency penalty, candidate count, log probabilities, function calling, JSON output and output schemas, image and audio input. Each model lists only the options it accepts. |
 | Image generation | Candidate count, inline or remote output, output MIME type, aspect ratio, and orientation. Each model lists only the options it accepts. |
 | Embedding generation | Text input and dimensions. Needs version 1.4.0 or later of the AI Client (WordPress 7.2 and later). |
 

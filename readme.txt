@@ -19,7 +19,7 @@ This plugin registers EmpirioLabs AI with the AI Client built into WordPress, so
 **Features**
 
 * Text generation with chat models, including system instructions, multi-turn conversations, function calling, and JSON output on the models that support them.
-* Image input for models that accept images.
+* Image and audio input for the models that accept them.
 * Image generation, with aspect ratio, orientation, number of images, and output format on the models that offer them.
 * Embedding generation on WordPress versions whose AI Client includes embeddings (WordPress 7.2 and later).
 * The model list loads from the EmpirioLabs AI catalog, so new models are available without a plugin update.
@@ -89,10 +89,15 @@ This plugin connects to the EmpirioLabs AI API at `https://api.empiriolabs.ai`, 
 What is sent, and when:
 
 * When WordPress checks the connection, for example when you save a key on the Settings > Connectors screen or when a request needs a model, the plugin requests the list of models with your API key.
-* When a plugin or feature on your site generates text, images, or embeddings through the AI Client with EmpirioLabs AI, the plugin sends the content of that request (the prompt, earlier messages of the conversation, the system instruction, any attached images, and the generation settings), the model ID, and your API key.
+* When a plugin or feature on your site generates text, images, or embeddings through the AI Client with EmpirioLabs AI, the plugin sends the content of that request (the prompt, earlier messages of the conversation, the system instruction, any attached images or audio, and the generation settings), the model ID, and your API key.
 * Every request identifies the plugin by its name and version in the User-Agent header.
 
 The service is provided by EmpirioLabs.ai LLC: [Terms of Service](https://empiriolabs.ai/terms-of-service), [Privacy Policy](https://empiriolabs.ai/privacy-policy).
+
+== Screenshots ==
+
+1. Add your EmpirioLabs AI API key on the Settings > Connectors screen.
+2. EmpirioLabs AI connected and available to the AI Client.
 
 == Changelog ==
 
