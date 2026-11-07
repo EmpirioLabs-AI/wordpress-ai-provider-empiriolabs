@@ -193,9 +193,11 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
 
         $modelId = $modelData['id'];
         $name = isset($modelData['display_name']) && is_string($modelData['display_name'])
-            && $modelData['display_name'] !== ''
-            ? $modelData['display_name']
-            : $modelId;
+            ? sanitize_text_field($modelData['display_name'])
+            : '';
+        if ($name === '') {
+            $name = $modelId;
+        }
 
         $endpoints = self::stringList($modelData['supported_endpoints'] ?? null);
         $category = isset($modelData['category']) && is_string($modelData['category']) ? $modelData['category'] : '';
