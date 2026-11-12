@@ -1,7 +1,7 @@
 <?php
 
 /**
- * PSR-4 autoloader for the AI Provider for EmpirioLabs AI plugin.
+ * PSR-4 autoloader for the EmpirioLabs AI Provider plugin.
  *
  * @since 1.0.0
  *

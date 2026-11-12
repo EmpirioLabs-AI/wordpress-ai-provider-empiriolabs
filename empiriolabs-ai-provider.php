@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name:       AI Provider for EmpirioLabs AI
+ * Plugin Name:       EmpirioLabs AI Provider
  * Plugin URI:        https://github.com/EmpirioLabs-AI/wordpress-ai-provider-empiriolabs
  * Description:       Adds EmpirioLabs AI as a provider for the WordPress AI Client, with text, image, and embedding models.
  * Requires at least: 7.0
@@ -11,7 +11,7 @@
  * Author URI:        https://empiriolabs.ai
  * License:           GPL-2.0-or-later
  * License URI:       https://spdx.org/licenses/GPL-2.0-or-later.html
- * Text Domain:       ai-provider-for-empiriolabs-ai
+ * Text Domain:       empiriolabs-ai-provider
  *
  * @package EmpirioLabs\AiProvider
  */
@@ -28,9 +28,9 @@ if (!defined('ABSPATH')) {
 }
 
 // Preserve the path beneath WP_PLUGIN_DIR when WordPress loads the plugin through a symlink.
-if (!defined('AI_PROVIDER_FOR_EMPIRIOLABS_AI_PLUGIN_DIR')) {
+if (!defined('EMPIRIOLABS_AI_PROVIDER_PLUGIN_DIR')) {
     define(
-        'AI_PROVIDER_FOR_EMPIRIOLABS_AI_PLUGIN_DIR',
+        'EMPIRIOLABS_AI_PROVIDER_PLUGIN_DIR',
         WP_PLUGIN_DIR . '/' . dirname(plugin_basename(__FILE__))
     );
 }

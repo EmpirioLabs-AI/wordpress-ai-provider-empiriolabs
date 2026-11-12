@@ -1,4 +1,4 @@
-# AI Provider for EmpirioLabs AI
+# EmpirioLabs AI Provider
 
 A WordPress plugin that adds [EmpirioLabs AI](https://empiriolabs.ai) as a provider for the AI Client built into WordPress 7.0 and later. Any plugin or feature that uses the AI Client can then run EmpirioLabs AI text, image, and embedding models.
 

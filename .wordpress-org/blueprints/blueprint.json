@@ -28,7 +28,7 @@
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "wordpress.org/plugins",
-				"slug": "ai-provider-for-empiriolabs-ai"
+				"slug": "empiriolabs-ai-provider"
 			},
 			"options": {
 				"activate": true

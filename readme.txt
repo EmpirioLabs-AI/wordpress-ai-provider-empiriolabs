@@ -1,4 +1,4 @@
-=== AI Provider for EmpirioLabs AI ===
+=== EmpirioLabs AI Provider ===
 Contributors:      empiriolabs
 Tags:              ai, artificial-intelligence, connector, llm, image-generation
 Requires at least: 7.0
@@ -39,7 +39,7 @@ To prefer a specific model, pass its model ID, for example `using_model_preferen
 
 == Installation ==
 
-1. Install the plugin from **Plugins > Add New**, or upload the `ai-provider-for-empiriolabs-ai` folder to the `/wp-content/plugins/` directory.
+1. Install the plugin from **Plugins > Add New**, or upload the `empiriolabs-ai-provider` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin on the **Plugins** screen.
 3. Create an API key on the [API Keys page](https://platform.empiriolabs.ai/dashboard/api-keys) of the EmpirioLabs AI dashboard.
 4. Go to **Settings > Connectors** and paste the key into the EmpirioLabs AI connector.

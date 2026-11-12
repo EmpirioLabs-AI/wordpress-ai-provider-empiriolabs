@@ -59,7 +59,7 @@ class EmpirioLabsProvider extends AbstractApiProvider
      */
     public static function userAgent(): string
     {
-        return 'ai-provider-for-empiriolabs-ai/' . self::VERSION . ' (WordPress)';
+        return 'empiriolabs-ai-provider/' . self::VERSION . ' (WordPress)';
     }
 
     /**
@@ -114,8 +114,8 @@ class EmpirioLabsProvider extends AbstractApiProvider
 
         if (function_exists('__')) {
             $description = $supportsEmbeddings
-                ? __('Text, image, and embedding generation with the EmpirioLabs AI model catalog.', 'ai-provider-for-empiriolabs-ai')
-                : __('Text and image generation with the EmpirioLabs AI model catalog.', 'ai-provider-for-empiriolabs-ai');
+                ? __('Text, image, and embedding generation with the EmpirioLabs AI model catalog.', 'empiriolabs-ai-provider')
+                : __('Text and image generation with the EmpirioLabs AI model catalog.', 'empiriolabs-ai-provider');
         } else {
             $description = $supportsEmbeddings
                 ? 'Text, image, and embedding generation with the EmpirioLabs AI model catalog.'
@@ -123,8 +123,8 @@ class EmpirioLabsProvider extends AbstractApiProvider
         }
 
         $pluginDir = dirname(__DIR__, 2);
-        if (defined('AI_PROVIDER_FOR_EMPIRIOLABS_AI_PLUGIN_DIR')) {
-            $definedPluginDir = constant('AI_PROVIDER_FOR_EMPIRIOLABS_AI_PLUGIN_DIR');
+        if (defined('EMPIRIOLABS_AI_PROVIDER_PLUGIN_DIR')) {
+            $definedPluginDir = constant('EMPIRIOLABS_AI_PROVIDER_PLUGIN_DIR');
             if (is_string($definedPluginDir)) {
                 $pluginDir = $definedPluginDir;
             }
