@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Needs no secret and no network beyond the PHP 7.4 image: the plugin has no
+  # dependency to install.
+  check:
+    name: Lint and package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint every PHP file with the runner's PHP
+        run: |
+          set -euo pipefail
+          php --version | head -n 1
+          find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n 1 php -l
+
+      # PHP 7.4 is the oldest version the plugin supports (Requires PHP in readme.txt).
+      - name: Lint every PHP file with PHP 7.4
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/plugin:ro" \
+            php:7.4-cli-alpine@sha256:0d67d81f60f4a400f1b68e3a41e910c98c5e08f49e515f6855561a0f24d37852 \
+            sh -c 'php --version | head -n 1; find /plugin -name "*.php" -not -path "/plugin/.git/*" -print0 | xargs -0 -n 1 php -l'
+
+      - name: Build the package and check its versions and contents
+        run: bin/package.sh "$RUNNER_TEMP/package"
