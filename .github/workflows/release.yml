@@ -90,7 +90,7 @@ jobs:
           {
             cat release/notes.md
             echo
-            echo "To install, download \`empiriolabs-ai-provider.zip\` below. In WordPress, open **Plugins > Add New Plugin > Upload Plugin**, choose the file, and activate the plugin. Then add your API key under **Settings > Connectors**."
+            echo "To install, download \`empiriolabs-ai-provider.zip\` below. In WordPress, open **Plugins > Add Plugin > Upload Plugin**, choose the file, and activate the plugin. Then add your API key under **Settings > Connectors**."
             echo
             echo "Verify the package with \`gh attestation verify empiriolabs-ai-provider.zip --repo ${GITHUB_REPOSITORY}\`."
           } >"$notes"
