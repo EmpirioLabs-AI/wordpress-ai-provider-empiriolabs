@@ -32,8 +32,9 @@ use WordPress\AiClient\Providers\OpenAiCompatibleImplementation\AbstractOpenAiCo
  * `features`, `structured_output` and `supported_parameters`), so models are never hard-coded here.
  *
  * @since 1.0.0
+ * @since 1.1.0 Maps text-to-speech and video generation models.
  *
- * @phpstan-type ParameterData array{name?: string, options?: list<mixed>}
+ * @phpstan-type ParameterData array{name?: string, options?: list<mixed>, required?: bool}
  * @phpstan-type ModelData array{
  *     id?: string,
  *     display_name?: string,
@@ -80,6 +81,24 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
     private const ENDPOINT_EMBEDDINGS = 'POST /v1/embeddings';
 
     /**
+     * Catalog endpoint that marks a model as a text-to-speech model.
+     *
+     * @since 1.1.0
+     *
+     * @var string
+     */
+    private const ENDPOINT_SPEECH = 'POST /v1/audio/speech';
+
+    /**
+     * Catalog endpoint that marks a model as a video generation model.
+     *
+     * @since 1.1.0
+     *
+     * @var string
+     */
+    private const ENDPOINT_VIDEOS = 'POST /v1/videos/generations';
+
+    /**
      * Catalog categories whose chat models produce general text.
      *
      * @since 1.0.0
@@ -110,6 +129,37 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
         'jpg' => 'image/jpeg',
         'webp' => 'image/webp',
     ];
+
+    /**
+     * Audio file formats, mapped to their MIME types.
+     *
+     * Raw sample encodings a model may also list have no file type of their own and are left to custom options.
+     *
+     * @since 1.1.0
+     *
+     * @var array<string, string>
+     */
+    public const AUDIO_FORMAT_MIME_TYPES = [
+        'mp3' => 'audio/mpeg',
+        'wav' => 'audio/wav',
+        'ogg' => 'audio/ogg',
+        'opus' => 'audio/ogg',
+        'flac' => 'audio/flac',
+        'aac' => 'audio/aac',
+    ];
+
+    /**
+     * {@inheritDoc}
+     *
+     * A plugin update can change how catalog entries map to capabilities and options, so each plugin version
+     * keeps its own cached model list.
+     *
+     * @since 1.1.0
+     */
+    protected function getBaseCacheKey(): string
+    {
+        return parent::getBaseCacheKey() . '_' . EmpirioLabsProvider::VERSION;
+    }
 
     /**
      * {@inheritDoc}
@@ -242,6 +292,63 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
                 $name,
                 [CapabilityEnum::embeddingGeneration()],
                 self::embeddingOptions($parameters)
+            );
+        }
+
+        $inputModalities = self::stringList($modelData['input_modalities'] ?? null);
+        $requiredParameters = self::requiredParameterNames($modelData['supported_parameters'] ?? null);
+
+        // A text-to-speech model takes the text in `input`, and nothing else the AI Client cannot provide.
+        if (
+            EmpirioLabsProvider::supportsTextToSpeechConversion() &&
+            in_array(self::ENDPOINT_SPEECH, $endpoints, true) &&
+            $category === 'audio' &&
+            in_array('audio', $outputModalities, true) &&
+            isset($parameters['input']) &&
+            !array_diff($requiredParameters, ['input'])
+        ) {
+            // The audio format is a parameter of its own on some models and `response_format` on others.
+            [$formatParameter, $formatValues] = self::outputFormats(
+                $parameters,
+                ['output_format', 'response_format'],
+                self::AUDIO_FORMAT_MIME_TYPES
+            );
+
+            return new EmpirioLabsModelMetadata(
+                $modelId,
+                $name,
+                [CapabilityEnum::textToSpeechConversion()],
+                self::speechOptions($parameters, array_keys($formatValues)),
+                $formatParameter,
+                $formatValues
+            );
+        }
+
+        /*
+         * A model that generates a video from a description requires `prompt`. Models that transform an existing
+         * clip, or that need an input the AI Client cannot provide, do not and are left out.
+         */
+        if (
+            EmpirioLabsProvider::supportsVideoGeneration() &&
+            in_array(self::ENDPOINT_VIDEOS, $endpoints, true) &&
+            $category === 'video' &&
+            in_array('video', $outputModalities, true) &&
+            in_array('prompt', $requiredParameters, true) &&
+            !array_diff($requiredParameters, ['prompt', 'image'])
+        ) {
+            $inputCombinations = self::videoInputModalityCombinations(
+                isset($parameters['image']) && in_array('image', $inputModalities, true),
+                in_array('image', $requiredParameters, true)
+            );
+            if (!$inputCombinations) {
+                return null;
+            }
+
+            return new ModelMetadata(
+                $modelId,
+                $name,
+                [CapabilityEnum::videoGeneration()],
+                self::videoOptions($parameters, $inputCombinations)
             );
         }
 
@@ -382,7 +489,7 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
         $aspectRatios = self::imageAspectRatios($parameters);
         if ($aspectRatios) {
             $options[] = new SupportedOption(OptionEnum::outputMediaAspectRatio(), $aspectRatios);
-            $orientations = self::imageOrientations($aspectRatios);
+            $orientations = self::mediaOrientations($aspectRatios);
             if ($orientations) {
                 $options[] = new SupportedOption(OptionEnum::outputMediaOrientation(), $orientations);
             }
@@ -391,6 +498,146 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
         $options[] = new SupportedOption(OptionEnum::customOptions());
 
         return $options;
+    }
+
+    /**
+     * Returns the supported options of a text-to-speech model.
+     *
+     * @since 1.1.0
+     *
+     * @param array<string, list<mixed>> $parameters Map of the model's parameter names to their options.
+     * @param list<string> $mimeTypes The audio MIME types the model can return.
+     * @return list<SupportedOption> The supported options.
+     */
+    private static function speechOptions(array $parameters, array $mimeTypes): array
+    {
+        $options = [
+            new SupportedOption(OptionEnum::inputModalities(), [[ModalityEnum::text()]]),
+            new SupportedOption(OptionEnum::outputModalities(), [[ModalityEnum::audio()]]),
+            new SupportedOption(OptionEnum::outputFileType(), [FileTypeEnum::inline(), FileTypeEnum::remote()]),
+        ];
+
+        if ($mimeTypes) {
+            $options[] = new SupportedOption(OptionEnum::outputMimeType(), $mimeTypes);
+        }
+
+        // The voices differ per model and an account can add its own, so any voice name is passed on.
+        if (isset($parameters['voice'])) {
+            $options[] = new SupportedOption(OptionEnum::outputSpeechVoice());
+        }
+
+        $options[] = new SupportedOption(OptionEnum::customOptions());
+
+        return $options;
+    }
+
+    /**
+     * Returns the supported options of a video generation model.
+     *
+     * A finished video is returned as a link to the file. The output MIME type is not an option: few models
+     * let a request choose the file format, and the AI Client would run one of those in place of the preferred
+     * model for any request that names a MIME type. A model's own format parameter is a custom option.
+     *
+     * @since 1.1.0
+     *
+     * @param array<string, list<mixed>> $parameters Map of the model's parameter names to their options.
+     * @param list<list<ModalityEnum>> $inputCombinations The input modality combinations the model accepts.
+     * @return list<SupportedOption> The supported options.
+     */
+    private static function videoOptions(array $parameters, array $inputCombinations): array
+    {
+        $options = [
+            new SupportedOption(OptionEnum::inputModalities(), $inputCombinations),
+            new SupportedOption(OptionEnum::outputModalities(), [[ModalityEnum::video()]]),
+            new SupportedOption(OptionEnum::outputFileType(), [FileTypeEnum::remote()]),
+        ];
+
+        $aspectRatios = self::listedAspectRatios($parameters);
+        if ($aspectRatios) {
+            $options[] = new SupportedOption(OptionEnum::outputMediaAspectRatio(), $aspectRatios);
+            $orientations = self::mediaOrientations($aspectRatios);
+            if ($orientations) {
+                $options[] = new SupportedOption(OptionEnum::outputMediaOrientation(), $orientations);
+            }
+        }
+
+        $options[] = new SupportedOption(OptionEnum::customOptions());
+
+        return $options;
+    }
+
+    /**
+     * Returns the input modality combinations of a video generation model.
+     *
+     * @since 1.1.0
+     *
+     * @param bool $takesImage Whether the catalog lists image input and an `image` parameter for the model.
+     * @param bool $requiresImage Whether the model requires the image.
+     * @return list<list<ModalityEnum>> The supported combinations, empty if the AI Client cannot use the model.
+     */
+    private static function videoInputModalityCombinations(bool $takesImage, bool $requiresImage): array
+    {
+        $combinations = [];
+        if (!$requiresImage) {
+            $combinations[] = [ModalityEnum::text()];
+        }
+        if ($takesImage) {
+            $combinations[] = [ModalityEnum::text(), ModalityEnum::image()];
+        }
+        return $combinations;
+    }
+
+    /**
+     * Returns the parameter that sets a model's output format, and the values it lists by MIME type.
+     *
+     * @since 1.1.0
+     *
+     * @param array<string, list<mixed>> $parameters Map of the model's parameter names to their options.
+     * @param list<string> $parameterNames The parameter names that can hold the output format, in order.
+     * @param array<string, string> $formatMimeTypes Map of file format to MIME type.
+     * @return array{0: string|null, 1: array<string, string>} The parameter name (null if the model lists no
+     *                                                         known format) and the map of MIME type to the
+     *                                                         value the catalog lists for it.
+     */
+    private static function outputFormats(array $parameters, array $parameterNames, array $formatMimeTypes): array
+    {
+        foreach ($parameterNames as $parameterName) {
+            $values = [];
+            foreach ($parameters[$parameterName] ?? [] as $format) {
+                if (!is_string($format)) {
+                    continue;
+                }
+                $mimeType = $formatMimeTypes[strtolower($format)] ?? null;
+                if ($mimeType !== null && !isset($values[$mimeType])) {
+                    $values[$mimeType] = $format;
+                }
+            }
+            if ($values) {
+                return [$parameterName, $values];
+            }
+        }
+
+        return [null, []];
+    }
+
+    /**
+     * Returns the aspect ratios a model lists in its `aspect_ratio` options.
+     *
+     * @since 1.1.0
+     *
+     * @param array<string, list<mixed>> $parameters Map of the model's parameter names to their options.
+     * @return list<string> The aspect ratios, such as `16:9`.
+     */
+    private static function listedAspectRatios(array $parameters): array
+    {
+        $aspectRatios = [];
+        foreach ($parameters['aspect_ratio'] ?? [] as $value) {
+            if (is_string($value) && preg_match('/^[1-9][0-9]*:[1-9][0-9]*$/', $value)) {
+                $aspectRatios[] = $value;
+            }
+        }
+
+        return array_values(array_unique($aspectRatios));
     }
 
     /**
@@ -405,12 +652,7 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
      */
     private static function imageAspectRatios(array $parameters): array
     {
-        $aspectRatios = [];
-        foreach ($parameters['aspect_ratio'] ?? [] as $value) {
-            if (is_string($value) && preg_match('/^[1-9][0-9]*:[1-9][0-9]*$/', $value)) {
-                $aspectRatios[] = $value;
-            }
-        }
+        $aspectRatios = self::listedAspectRatios($parameters);
 
         if (!$aspectRatios) {
             foreach ($parameters['size'] ?? [] as $value) {
@@ -435,7 +677,7 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
      * @param list<string> $aspectRatios The aspect ratios.
      * @return list<MediaOrientationEnum> The orientations.
      */
-    private static function imageOrientations(array $aspectRatios): array
+    private static function mediaOrientations(array $aspectRatios): array
     {
         $square = false;
         $landscape = false;
@@ -525,6 +767,33 @@ class EmpirioLabsModelMetadataDirectory extends AbstractOpenAiCompatibleModelMet
                 : [];
         }
         return $parameters;
+    }
+
+    /**
+     * Returns the names of the parameters a model requires in every request.
+     *
+     * @since 1.1.0
+     *
+     * @param mixed $value The `supported_parameters` field.
+     * @return list<string> The names of the required parameters.
+     */
+    private static function requiredParameterNames($value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+        $names = [];
+        foreach ($value as $parameter) {
+            if (
+                is_array($parameter) &&
+                isset($parameter['name'], $parameter['required']) &&
+                is_string($parameter['name']) &&
+                $parameter['required'] === true
+            ) {
+                $names[] = $parameter['name'];
+            }
+        }
+        return $names;
     }
 
     /**
