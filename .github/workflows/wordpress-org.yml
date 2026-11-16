@@ -1,0 +1,150 @@
+# Puts a released version in the WordPress.org Plugin Directory by committing it
+# to the plugin's SVN repository (trunk, tags/<version> and assets).
+#
+# The Release workflow calls this after it publishes a new tag's release. Run it
+# by hand (Actions > WordPress.org > Run workflow, with the version) for a
+# version that is already released.
+#
+# prepare needs no secret: it downloads the package attached to the GitHub
+# release, verifies that release.yml built and attested it, checks that the
+# package names the version being published, and stages the package as trunk
+# with .wordpress-org from the same tag as assets. deploy runs in the
+# `wordpress-org` environment, which needs an owner's approval and holds the SVN
+# password (WordPress.org has no keyless publishing). It installs nothing: it
+# runs the svn client of the ubuntu-22.04 runner image (ubuntu-24.04 has none).
+# A version already under tags/ is refused, because a directory version, like a
+# GitHub release, is never changed once published.
+
+name: WordPress.org
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The released version to publish, such as 1.1.0
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The released version to publish, such as 1.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Verify the released package and stage it
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # the tag and the release asset
+      attestations: read # the package's provenance attestation
+    steps:
+      - name: Check the version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::The version must look like 1.2.3, not '$TAG'"
+            exit 1
+          fi
+
+      - name: Check out the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+
+      - name: Download the released package and verify its attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern empiriolabs-ai-provider.zip --dir "$RUNNER_TEMP/release"
+          gh attestation verify "$RUNNER_TEMP/release/empiriolabs-ai-provider.zip" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" --source-ref "refs/tags/$TAG"
+          sha256sum "$RUNNER_TEMP/release/empiriolabs-ai-provider.zip"
+
+      - name: Stage trunk and assets
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/stage"
+          mkdir -p "$stage" "$RUNNER_TEMP/unpacked"
+          unzip -q "$RUNNER_TEMP/release/empiriolabs-ai-provider.zip" -d "$RUNNER_TEMP/unpacked"
+          mv "$RUNNER_TEMP/unpacked/empiriolabs-ai-provider" "$stage/trunk"
+          cp -R .wordpress-org "$stage/assets"
+          header="$(sed -n 's/^ \* Version:[[:space:]]*//p' "$stage/trunk/empiriolabs-ai-provider.php" | head -n 1 | tr -d '\r')"
+          stable="$(sed -n 's/^Stable tag:[[:space:]]*//p' "$stage/trunk/readme.txt" | head -n 1 | tr -d '\r')"
+          if [ "$header" != "$TAG" ] || [ "$stable" != "$TAG" ]; then
+            echo "::error::The package says version $header and stable tag $stable, not $TAG"
+            exit 1
+          fi
+          echo "trunk: $(find "$stage/trunk" -type f | wc -l) files; assets: $(find "$stage/assets" -type f | wc -l) files"
+
+      - name: Upload the staged files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wordpress-org
+          path: ${{ runner.temp }}/stage/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Commit to the WordPress.org SVN
+    needs: prepare
+    runs-on: ubuntu-22.04
+    environment: wordpress-org
+    permissions:
+      contents: read
+    concurrency:
+      group: wordpress-org-svn
+      cancel-in-progress: false
+    steps:
+      - name: Download the staged files
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: wordpress-org
+          path: stage
+
+      - name: Commit trunk, the version tag and the assets
+        env:
+          SVN_URL: https://plugins.svn.wordpress.org/empiriolabs-ai-provider
+          SVN_USERNAME: empiriolabs
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! command -v svn >/dev/null; then
+            echo "::error::This runner image has no svn client; move the job to an image that has one"
+            exit 1
+          fi
+          if [ -z "$SVN_PASSWORD" ]; then
+            echo "::error::The wordpress-org environment has no SVN_PASSWORD"
+            exit 1
+          fi
+          if svn ls "$SVN_URL/tags/$TAG" --non-interactive >/dev/null 2>&1; then
+            echo "::error::Version $TAG is already in the directory (tags/$TAG); release a new version instead"
+            exit 1
+          fi
+          svn checkout --depth immediates --non-interactive "$SVN_URL" svn
+          cd svn
+          svn update --set-depth infinity --non-interactive trunk assets
+          rsync -rc --delete --exclude=.svn ../stage/trunk/ trunk/
+          rsync -rc --delete --exclude=.svn ../stage/assets/ assets/
+          svn add --force --quiet trunk assets
+          svn status | sed -n 's/^! *//p' | while IFS= read -r gone; do svn rm --quiet "$gone@"; done
+          find assets -type f -name '*.png' -exec svn propset --quiet svn:mime-type image/png {} +
+          find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec svn propset --quiet svn:mime-type image/jpeg {} +
+          find assets -type f -name '*.json' -exec svn propset --quiet svn:mime-type application/json {} +
+          svn cp --quiet trunk "tags/$TAG"
+          svn status
+          svn commit --non-interactive --no-auth-cache --username "$SVN_USERNAME" --password "$SVN_PASSWORD" \
+            -m "Release $TAG"
+          echo "Committed $TAG. The directory page is https://wordpress.org/plugins/empiriolabs-ai-provider/"
