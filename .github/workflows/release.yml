@@ -5,7 +5,10 @@
 # and no secret. release runs in the `release` environment, which needs an
 # owner's approval: it records a build provenance attestation for the package
 # and publishes the release with the package attached. Releases are immutable,
-# so from then on neither the tag nor the release can change.
+# so from then on neither the tag nor the release can change. wordpress-org then
+# commits that same attested package to the WordPress.org Plugin Directory
+# (wordpress-org.yml, in the `wordpress-org` environment, which needs an owner's
+# approval as well).
 #
 # The tag must equal the version in the plugin header, in
 # EmpirioLabsProvider::VERSION and in the readme's stable tag, and readme.txt
@@ -95,3 +98,13 @@ jobs:
             echo "Verify the package with \`gh attestation verify empiriolabs-ai-provider.zip --repo ${GITHUB_REPOSITORY}\`."
           } >"$notes"
           gh release create "$TAG" release/empiriolabs-ai-provider.zip --repo "$GITHUB_REPOSITORY" --verify-tag --title "EmpirioLabs AI Provider ${TAG}" --notes-file "$notes"
+
+  wordpress-org:
+    name: Publish to the WordPress.org Plugin Directory
+    needs: release
+    permissions:
+      contents: read
+      attestations: read
+    uses: ./.github/workflows/wordpress-org.yml
+    with:
+      tag: ${{ github.ref_name }}

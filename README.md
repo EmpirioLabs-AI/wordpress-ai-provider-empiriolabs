@@ -105,7 +105,7 @@ The plugin sends requests to the EmpirioLabs AI API (`https://api.empiriolabs.ai
 
 ## Releases
 
-Each release's package is built from its tag by GitHub Actions and carries a build provenance attestation. To verify a download:
+Each release's package is built from its tag by GitHub Actions and carries a build provenance attestation. The same package is then committed to the [WordPress.org Plugin Directory](https://wordpress.org/plugins/empiriolabs-ai-provider/) after its attestation is verified. To verify a download:
 
 ```bash
 gh attestation verify empiriolabs-ai-provider.zip --repo EmpirioLabs-AI/wordpress-ai-provider-empiriolabs
