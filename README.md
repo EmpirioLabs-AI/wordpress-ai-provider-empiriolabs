@@ -12,9 +12,10 @@ EmpirioLabs AI is specialized AI model hosting for open, proprietary, and custom
 
 ## Setup
 
-1. Download `empiriolabs-ai-provider.zip` from the [latest release](https://github.com/EmpirioLabs-AI/wordpress-ai-provider-empiriolabs/releases/latest).
-2. In WordPress, open **Plugins > Add Plugin > Upload Plugin**, choose the file, and activate the plugin.
-3. Go to **Settings > Connectors** and paste your API key into the EmpirioLabs AI connector.
+1. In WordPress, open **Plugins > Add Plugin**, search for **EmpirioLabs AI Provider**, choose **Install Now**, then **Activate**. The plugin's page is [wordpress.org/plugins/empiriolabs-ai-provider](https://wordpress.org/plugins/empiriolabs-ai-provider/).
+2. Go to **Settings > Connectors** and paste your API key into the EmpirioLabs AI connector.
+
+You can also install it with WP-CLI (`wp plugin install empiriolabs-ai-provider --activate`), or download `empiriolabs-ai-provider.zip` from the [latest release](https://github.com/EmpirioLabs-AI/wordpress-ai-provider-empiriolabs/releases/latest) and upload it under **Plugins > Add Plugin > Upload Plugin**.
 
 You can also set the key with the `EMPIRIOLABS_API_KEY` environment variable or a PHP constant of the same name in `wp-config.php`.
 
