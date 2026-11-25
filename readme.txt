@@ -2,8 +2,8 @@
 Contributors:      empiriolabs
 Tags:              ai, artificial-intelligence, connector, llm, image-generation
 Requires at least: 7.0
-Tested up to:      7.1
-Stable tag:        1.1.0
+Tested up to:      7.2
+Stable tag:        1.1.1
 Requires PHP:      7.4
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -138,6 +138,10 @@ The service is provided by EmpirioLabs.ai LLC: [Terms of Service](https://empiri
 2. EmpirioLabs AI connected and available to the AI Client.
 
 == Changelog ==
+
+= 1.1.1 =
+
+* Tested with WordPress 7.2 and PHP 8.6.
 
 = 1.1.0 =
 

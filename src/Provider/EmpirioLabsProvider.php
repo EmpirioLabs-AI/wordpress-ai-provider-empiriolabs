@@ -49,7 +49,7 @@ class EmpirioLabsProvider extends AbstractApiProvider implements ProviderWithOpe
      *
      * @var string
      */
-    public const VERSION = '1.1.0';
+    public const VERSION = '1.1.1';
 
     /**
      * The provider ID. It also names the API key setting (`connectors_ai_empiriolabs_api_key`) and the
