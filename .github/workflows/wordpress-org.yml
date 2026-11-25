@@ -1,7 +1,7 @@
 # Puts a released version in the WordPress.org Plugin Directory by committing it
 # to the plugin's SVN repository (trunk, tags/<version> and assets).
 #
-# The Release workflow calls this after it publishes a new tag's release. Run it
+# The Release workflow starts this after it publishes a new tag's release. Run it
 # by hand (Actions > WordPress.org > Run workflow, with the version) for a
 # version that is already released.
 #
@@ -18,12 +18,6 @@
 name: WordPress.org
 
 on:
-  workflow_call:
-    inputs:
-      tag:
-        description: The released version to publish, such as 1.1.0
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       tag:

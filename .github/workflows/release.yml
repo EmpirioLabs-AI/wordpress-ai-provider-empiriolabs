@@ -6,9 +6,9 @@
 # owner's approval: it records a build provenance attestation for the package
 # and publishes the release with the package attached. Releases are immutable,
 # so from then on neither the tag nor the release can change. wordpress-org then
-# commits that same attested package to the WordPress.org Plugin Directory
-# (wordpress-org.yml, in the `wordpress-org` environment, which needs an owner's
-# approval as well).
+# starts wordpress-org.yml for the version, a run of its own that commits that
+# same attested package to the WordPress.org Plugin Directory (in the
+# `wordpress-org` environment, which needs an owner's approval as well).
 #
 # The tag must equal the version in the plugin header, in
 # EmpirioLabsProvider::VERSION and in the readme's stable tag, and readme.txt
@@ -99,12 +99,18 @@ jobs:
           } >"$notes"
           gh release create "$TAG" release/empiriolabs-ai-provider.zip --repo "$GITHUB_REPOSITORY" --verify-tag --title "EmpirioLabs AI Provider ${TAG}" --notes-file "$notes"
 
+  # A run of its own, not a called workflow: a called workflow gets none of its
+  # environment's secrets unless the caller passes secrets on, so the SVN
+  # password would be empty there.
   wordpress-org:
-    name: Publish to the WordPress.org Plugin Directory
+    name: Start the WordPress.org publish
     needs: release
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
-      attestations: read
-    uses: ./.github/workflows/wordpress-org.yml
-    with:
-      tag: ${{ github.ref_name }}
+      actions: write # start the WordPress.org workflow
+    steps:
+      - name: Run the WordPress.org workflow for this version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh workflow run wordpress-org.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag="$TAG"
